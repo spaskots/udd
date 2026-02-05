@@ -1,0 +1,79 @@
+version: "3.8"
+services:
+  elasticsearch:
+    build: .
+    container_name: udd-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    networks:
+      - udd-network
+    restart: always
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.15.2
+    container_name: udd-logstash
+    ports:
+      - "5044:5044"
+    volumes:
+      - "./logstash-config/logstash.conf:/usr/share/logstash/pipeline/logstash.conf"
+      - "./logs:/usr/share/logstash/ingest_data/"
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+    depends_on:
+      - elasticsearch
+    networks:
+      - udd-network
+    restart: always
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.2
+    container_name: udd-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - udd-network
+    restart: always
+
+  minio:
+    image: minio/minio
+    container_name: udd-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - udd-network
+    restart: always
+
+  postgres:
+    image: postgres:15
+    container_name: udd-postgres
+    environment:
+      POSTGRES_DB: udd_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5432:5432"
+    networks:
+      - udd-network
+    restart: always
+
+networks:
+  udd-network:
+    driver: bridge
+
+volumes:
+  minio-data:

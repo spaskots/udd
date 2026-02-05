@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UDD - Forensic Analysis | Uros Spasenic</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts (Hacker style) -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar { background-color: #1a252f; }
+        .navbar-brand { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #ecf0f1 !important; }
+        .navbar-author { font-size: 0.78rem; color: #7f8c8d; margin-left: 12px; font-family: 'JetBrains Mono', monospace; }
+        .navbar-author span { color: #3498db; }
+        .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .nav-tabs .nav-link.active { background-color: #fff; border-bottom-color: #fff; font-weight: bold; color: #2c3e50; }
+        .nav-tabs .nav-link { color: #7f8c8d; }
+        .result-card h5 { color: #2980b9; }
+        .badge-threat-LOW { background-color: #27ae60; }
+        .badge-threat-MEDIUM { background-color: #f39c12; }
+        .badge-threat-HIGH { background-color: #e67e22; }
+        .badge-threat-CRITICAL { background-color: #c0392b; }
+        pre { background: #ecf0f1; padding: 10px; border-radius: 5px; }
+        code { color: #d63384; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark mb-4">
+    <div class="container">
+        <div class="d-flex align-items-center">
+            <a class="navbar-brand" href="#">UDD_PROJECT_2026</a>
+            <span class="navbar-author">by <span>Uros Spasenic</span></span>
+        </div>
+        <button class="btn btn-outline-light btn-sm" id="btnLogout">Logout</button>
+    </div>
+</nav>
+
+<div class="container">
+
+    <!-- MAIN TABS -->
+    <ul class="nav nav-tabs mb-4" id="mainTab" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button">1. Upload & Index</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search" type="button">2. Search</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="mainTabContent">
+
+        <!-- UPLOAD & INDEX TAB -->
+        <div class="tab-pane fade show active" id="upload" role="tabpanel">
+            <div class="card p-4">
+                <h4>Phase 1: Upload & Parse</h4>
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="fileInput" class="form-label">Select Forensic Report (PDF)</label>
+                        <input class="form-control" type="file" id="fileInput" name="file" accept=".pdf" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="btnAnalyze">
+                        <span class="spinner-border spinner-border-sm d-none" id="analyzeSpinner"></span>
+                        Analyze Document
+                    </button>
+                </form>
+
+                <div id="confirmSection" class="mt-5" style="display: none; border-top: 2px dashed #ccc; padding-top: 20px;">
+                    <h4 class="text-success">Phase 2: Data Verification</h4>
+                    <form id="confirmForm">
+                        <input type="hidden" id="tempFileName">
+                        <input type="hidden" id="originalFilename">
+                        <div class="row">
+                            <div class="col-md-6 mb-3"><label class="form-label">Analyst Name</label><input type="text" class="form-control" id="analystName"></div>
+                            <div class="col-md-6 mb-3"><label class="form-label">Malware Name</label><input type="text" class="form-control" id="malwareName"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3"><label class="form-label">CERT / Organization</label><input type="text" class="form-control" id="certName"></div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Threat Level</label>
+                                <select class="form-select" id="threatLevel">
+                                    <option value="LOW">LOW</option><option value="MEDIUM">MEDIUM</option><option value="HIGH">HIGH</option><option value="CRITICAL">CRITICAL</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3"><label class="form-label">Hash (MD5/SHA)</label><input type="text" class="form-control" id="fileHash"></div>
+                            <div class="col-md-6 mb-3"><label class="form-label">Location (City)</label><input type="text" class="form-control" id="locationCity"></div>
+                        </div>
+                        <div class="mb-3"><label class="form-label">Behavior Description</label><textarea class="form-control" id="behaviorDescription" rows="5"></textarea></div>
+                        <button type="submit" class="btn btn-success w-100 btn-lg">CONFIRM AND INDEX</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEARCH TAB -->
+        <div class="tab-pane fade" id="search" role="tabpanel">
+            <div class="card p-4">
+                <ul class="nav nav-pills mb-3" id="searchModeTab" role="tablist">
+                    <li class="nav-item"><button class="nav-link active" id="simple-search-pill" data-bs-toggle="pill" data-bs-target="#simpleSearch" type="button">Simple Search</button></li>
+                    <li class="nav-item"><button class="nav-link" id="advanced-search-pill" data-bs-toggle="pill" data-bs-target="#advancedSearch" type="button">Advanced Boolean</button></li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- SIMPLE SEARCH -->
+                    <div class="tab-pane fade show active" id="simpleSearch">
+                        <form id="searchForm">
+                            <div class="mb-3">
+                                <label class="form-label">Keywords</label>
+                                <input type="text" class="form-control" id="searchQuery" placeholder="Enter keywords (e.g. WannaCry, Hans)...">
+                            </div>
+                            <div class="p-3 mb-3 bg-light border rounded">
+                                <label class="form-label fw-bold text-secondary">Geospatial Search (Optional)</label>
+                                <div class="row">
+                                    <div class="col-md-8"><input type="text" class="form-control" id="geoCity" placeholder="City Center"></div>
+                                    <div class="col-md-4"><div class="input-group"><input type="number" class="form-control" id="geoRadius" placeholder="Radius"><span class="input-group-text">km</span></div></div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="knnCheckbox"><label class="form-check-label">Use KNN (Semantic)</label></div>
+                                <button class="btn btn-primary px-5" type="submit">Execute Simple Search</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ADVANCED SEARCH -->
+                    <div class="tab-pane fade" id="advancedSearch">
+                        <form id="advancedSearchForm">
+                            <div class="mb-3">
+                                <label class="form-label">Boolean Expression (C-like Logic)</label>
+                                <textarea class="form-control" id="advancedExpression" rows="2" placeholder='malware_name:"Mirai Botnet" AND (threat_level:MEDIUM OR analyst_name:Hans)'></textarea>
+                                <small class="text-muted">Available fields: <code>analyst_name, malware_name, cert_name, behavior_description, threat_level, file_hash</code></small>
+                            </div>
+                            <button class="btn btn-dark w-100" type="submit">Execute Boolean Search</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div id="resultsArea" class="mt-4"></div>
+        </div>
+    </div>
+</div>
+
+<footer class="mt-5 py-3 text-center text-muted" style="font-size:0.8rem; border-top: 1px solid #dee2e6;">
+    UDD Project &mdash; Digital Documents Management &mdash; FTN Novi Sad &mdash; <strong>Uros Spasenic</strong> &mdash; E2 59-2025
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) { window.location.href = "/login.html"; return; }
+        $.ajaxSetup({ headers: { 'Authorization': 'Bearer ' + token } });
+
+        $("#btnLogout").click(function() { localStorage.removeItem('jwtToken'); window.location.href = "/login.html"; });
+
+        // --- 1. UPLOAD & PARSE ---
+        $("#uploadForm").submit(function(e) {
+            e.preventDefault();
+            let formData = new FormData(this);
+            $("#btnAnalyze").prop("disabled", true);
+            $("#analyzeSpinner").removeClass("d-none");
+            $.ajax({
+                url: '/api/index/parse', type: 'POST', data: formData, contentType: false, processData: false,
+                success: function(response) {
+                    $("#tempFileName").val(response.tempFileName); $("#originalFilename").val(response.originalFilename);
+                    $("#analystName").val(response.analystName); $("#malwareName").val(response.malwareName);
+                    $("#certName").val(response.certName); $("#threatLevel").val(response.threatLevel);
+                    $("#fileHash").val(response.fileHash); $("#locationCity").val(response.location);
+                    $("#behaviorDescription").val(response.behaviorDescription);
+                    $("#confirmSection").fadeIn(); $("#btnAnalyze").prop("disabled", false); $("#analyzeSpinner").addClass("d-none");
+                }
+            });
+        });
+
+        // --- 2. CONFIRM ---
+        $("#confirmForm").submit(function(e) {
+            e.preventDefault();
+            let data = {
+                tempFileName: $("#tempFileName").val(), originalFilename: $("#originalFilename").val(),
+                analystName: $("#analystName").val(), malwareName: $("#malwareName").val(),
+                certName: $("#certName").val(), threatLevel: $("#threatLevel").val(),
+                fileHash: $("#fileHash").val(), location: $("#locationCity").val(),
+                behaviorDescription: $("#behaviorDescription").val()
+            };
+            $.ajax({
+                url: '/api/index/confirm', type: 'POST', contentType: 'application/json', data: JSON.stringify(data),
+                success: function() { alert("Successfully indexed!"); location.reload(); }
+            });
+        });
+
+        // --- 3. SIMPLE SEARCH ---
+        $("#searchForm").submit(function(e) {
+            e.preventDefault();
+            let queryText = $("#searchQuery").val();
+            let keywordsList = queryText.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
+            let payload = { keywords: keywordsList, location: $("#geoCity").val(), radiusKm: $("#geoRadius").val() ? parseInt($("#geoRadius").val()) : null };
+            $.ajax({
+                url: '/api/search/simple?isKnn=' + $("#knnCheckbox").is(":checked"),
+                type: 'POST', contentType: 'application/json', data: JSON.stringify(payload),
+                success: function(response) { displayResults(response.content); }
+            });
+        });
+
+        // --- 4. ADVANCED SEARCH ---
+        $("#advancedSearchForm").submit(function(e) {
+            e.preventDefault();
+            let expr = $("#advancedExpression").val();
+            let payload = { advancedExpression: expr };
+            $.ajax({
+                url: '/api/search/advanced',
+                type: 'POST', contentType: 'application/json', data: JSON.stringify(payload),
+                success: function(response) { displayResults(response.content); },
+                error: function() { alert("Check your Boolean syntax (e.g. use AND/OR/NOT uppercase)"); }
+            });
+        });
+
+        function displayResults(results) {
+            let container = $("#resultsArea"); container.empty();
+            if (results.length === 0) { container.append('<div class="alert alert-warning">No results found.</div>'); return; }
+            results.forEach(item => {
+                let badgeClass = 'badge-threat-' + item.threatLevel;
+                let html = `
+                    <div class="card result-card"><div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="card-title mb-0">${item.malwareName}</h5><span class="badge ${badgeClass}">${item.threatLevel}</span>
+                        </div>
+                        <h6 class="card-subtitle mb-2 text-muted">Analyst: ${item.analystName} | CERT: ${item.certName}</h6>
+                        <p class="card-text">${item.behaviorDescription || "No description available"}</p>
+                        <a href="/api/file/${item.minioObjectName}" class="btn btn-sm btn-outline-primary" target="_blank">Download Original PDF</a>
+                    </div></div>`;
+                container.append(html);
+            });
+        }
+    });
+</script>
+</body>
+</html>
