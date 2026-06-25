@@ -63,6 +63,7 @@ public class SearchServiceImpl implements SearchService {
             .withPageable(pageable)
             .withMinScore(0.4f)
             .build();
+        searchQuery.setSearchType(null);
 
         return runQuery(searchQuery);
     }
