@@ -162,13 +162,19 @@ threat_level:HIGH
 threat_level:CRITICAL
 ```
 ```
-analyst_name:Hans AND threat_level:CRITICAL
+analyst_name:Hans AND threat_level:MEDIUM
+```
+```
+malware_name:"LockBit" AND threat_level:CRITICAL
 ```
 ```
 malware_name:"LockBit" OR malware_name:"Mirai"
 ```
 ```
 cert_name:CERT-RS AND NOT threat_level:LOW
+```
+```
+threat_level:HIGH OR threat_level:CRITICAL
 ```
 ```
 malware_name:"LockBit" AND (threat_level:HIGH OR threat_level:CRITICAL)
